@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useRef } from 'react';
 import { Upload, FileText, X, CheckCircle } from 'lucide-react';
 
 export default function FileUpload({ onDataParsed, isLoading }) {
@@ -8,6 +8,7 @@ export default function FileUpload({ onDataParsed, isLoading }) {
   const [fileName, setFileName] = useState(null);
   const [error, setError] = useState(null);
   const [rowCount, setRowCount] = useState(0);
+  const inputRef = useRef(null);
 
   const handleFile = useCallback(
     async (file) => {
@@ -74,17 +75,44 @@ export default function FileUpload({ onDataParsed, isLoading }) {
     [handleFile]
   );
 
-  const clearFile = useCallback(() => {
+  const handleClick = useCallback(() => {
+    if (inputRef.current && !isLoading) {
+      inputRef.current.click();
+    }
+  }, [isLoading]);
+
+  const clearFile = useCallback((e) => {
+    e.stopPropagation();
     setFileName(null);
     setError(null);
     setRowCount(0);
+    if (inputRef.current) {
+      inputRef.current.value = '';
+    }
     onDataParsed(null);
   }, [onDataParsed]);
 
   return (
     <div className="w-full">
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".csv"
+        onChange={handleChange}
+        className="hidden"
+        disabled={isLoading}
+      />
       <div
-        className={`relative rounded-xl border-2 border-dashed p-10 transition-all duration-300 ${
+        role="button"
+        tabIndex={0}
+        onClick={handleClick}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleClick();
+          }
+        }}
+        className={`relative rounded-xl border-2 border-dashed p-10 transition-all duration-300 cursor-pointer ${
           dragActive
             ? 'border-primary bg-primary/5 scale-[1.02]'
             : 'border-border hover:border-primary/50 hover:bg-card/50'
@@ -94,15 +122,7 @@ export default function FileUpload({ onDataParsed, isLoading }) {
         onDragOver={handleDrag}
         onDrop={handleDrop}
       >
-        <input
-          type="file"
-          accept=".csv"
-          onChange={handleChange}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-          disabled={isLoading}
-        />
-
-        <div className="flex flex-col items-center justify-center gap-4 text-center">
+        <div className="flex flex-col items-center justify-center gap-4 text-center pointer-events-none">
           {fileName ? (
             <>
               <div className="relative">
@@ -116,11 +136,8 @@ export default function FileUpload({ onDataParsed, isLoading }) {
                   <FileText className="h-4 w-4 text-primary" />
                   <span className="font-medium text-foreground">{fileName}</span>
                   <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      clearFile();
-                    }}
-                    className="p-1 hover:bg-secondary rounded-full transition-colors text-muted-foreground hover:text-foreground"
+                    onClick={clearFile}
+                    className="p-1 hover:bg-secondary rounded-full transition-colors text-muted-foreground hover:text-foreground pointer-events-auto"
                     disabled={isLoading}
                   >
                     <X className="h-4 w-4" />
