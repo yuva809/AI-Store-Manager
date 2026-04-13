@@ -20,6 +20,9 @@ export default function Dashboard() {
     setIsLoading(true);
     setError(null);
 
+    console.log('[v0] analyzeData called with', data?.length, 'rows');
+    console.log('[v0] First row:', JSON.stringify(data?.[0]));
+
     try {
       const response = await fetch('/api/analyze', {
         method: 'POST',
@@ -29,14 +32,20 @@ export default function Dashboard() {
         body: JSON.stringify({ data }),
       });
 
+      console.log('[v0] API response status:', response.status);
+
       if (!response.ok) {
-        throw new Error('Failed to analyze data');
+        const errorData = await response.json().catch(() => ({}));
+        console.log('[v0] API error response:', errorData);
+        throw new Error(errorData.error || 'Failed to analyze data');
       }
 
       const result = await response.json();
+      console.log('[v0] API success result:', JSON.stringify(result).slice(0, 500));
       setMetrics(result.metrics);
       setInsights(result.insights);
     } catch (err) {
+      console.error('[v0] analyzeData error:', err);
       setError(err.message);
       setMetrics(null);
       setInsights(null);
