@@ -45,13 +45,27 @@ function KpiCard({ title, value, subtitle, icon: Icon, variant = 'default' }) {
 }
 
 export default function KpiCards({ metrics }) {
-  const { totalRevenue, totalOrders, topProduct, lowStockCount } = metrics;
+  const { totalRevenue = 0, totalOrders = 0, topProduct = null, lowStockCount = 0 } = metrics || {};
+
+  // Format revenue with proper currency display
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  };
+
+  // Get top product info safely
+  const topProductName = topProduct && topProduct.name ? topProduct.name : 'No data';
+  const topProductRevenue = topProduct && topProduct.revenue ? formatCurrency(topProduct.revenue) : '';
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <KpiCard
         title="Total Revenue"
-        value={`$${totalRevenue.toLocaleString()}`}
+        value={formatCurrency(totalRevenue)}
         subtitle="All time earnings"
         icon={DollarSign}
         variant="success"
@@ -64,14 +78,15 @@ export default function KpiCards({ metrics }) {
       />
       <KpiCard
         title="Top Product"
-        value={topProduct ? topProduct.name : 'N/A'}
-        subtitle={topProduct ? `$${topProduct.revenue.toLocaleString()} revenue` : 'No data'}
+        value={topProductName}
+        subtitle={topProductRevenue ? `${topProductRevenue} revenue` : 'Upload data to see'}
         icon={TrendingUp}
+        variant={topProduct ? 'success' : 'default'}
       />
       <KpiCard
         title="Low Stock Alert"
         value={lowStockCount}
-        subtitle={lowStockCount > 0 ? 'Products need restock' : 'Stock levels healthy'}
+        subtitle={lowStockCount > 0 ? `${lowStockCount} product${lowStockCount > 1 ? 's' : ''} need restock` : 'Stock levels healthy'}
         icon={AlertTriangle}
         variant={lowStockCount > 0 ? 'warning' : 'default'}
       />

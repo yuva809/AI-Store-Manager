@@ -17,7 +17,27 @@ const priorityConfig = {
   },
 };
 
-export default function RecommendationList({ recommendations }) {
+export default function RecommendationList({ recommendations = [] }) {
+  if (!recommendations || recommendations.length === 0) {
+    return (
+      <div className="relative group bg-card border border-border rounded-xl p-6 hover:border-primary/30 transition-all duration-300">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="relative">
+            <div className="absolute inset-0 bg-accent/20 blur-lg rounded-full" />
+            <div className="relative rounded-lg bg-accent/10 p-2">
+              <Target className="h-5 w-5 text-accent" />
+            </div>
+          </div>
+          <div>
+            <h3 className="text-base font-semibold text-foreground">Recommended Actions</h3>
+            <p className="text-xs text-muted-foreground">Prioritized next steps</p>
+          </div>
+        </div>
+        <p className="text-sm text-muted-foreground">No recommendations available yet.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="relative group bg-card border border-border rounded-xl p-6 hover:border-primary/30 transition-all duration-300">
       <div className="absolute inset-0 bg-primary/5 rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
