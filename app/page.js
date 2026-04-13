@@ -9,43 +9,56 @@ import RevenueOverTimeChart from '@/components/RevenueOverTimeChart';
 import InsightBox from '@/components/InsightBox';
 import RecommendationList from '@/components/RecommendationList';
 import { sampleData } from '@/lib/sampleData';
+import { processData } from '@/lib/processData';
+import { generateInsights } from '@/lib/mockInsights';
+
+// Threshold for client-side vs server-side processing
+const CLIENT_PROCESSING_THRESHOLD = 5000;
 
 export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(false);
   const [metrics, setMetrics] = useState(null);
   const [insights, setInsights] = useState(null);
   const [error, setError] = useState(null);
+  const [rowCount, setRowCount] = useState(0);
 
   const analyzeData = useCallback(async (data) => {
     setIsLoading(true);
     setError(null);
-
-    console.log('[v0] analyzeData called with', data?.length, 'rows');
-    console.log('[v0] First row:', JSON.stringify(data?.[0]));
+    setRowCount(data?.length || 0);
 
     try {
-      const response = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ data }),
-      });
+      // For large datasets, process client-side to avoid payload size limits
+      if (data.length > CLIENT_PROCESSING_THRESHOLD) {
+        // Process in chunks to prevent UI freezing
+        await new Promise(resolve => setTimeout(resolve, 100)); // Allow UI to update
+        
+        const calculatedMetrics = processData(data);
+        const calculatedInsights = generateInsights(calculatedMetrics);
+        
+        setMetrics(calculatedMetrics);
+        setInsights(calculatedInsights);
+      } else {
+        // For smaller datasets, use the API
+        const response = await fetch('/api/analyze', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ data }),
+        });
 
-      console.log('[v0] API response status:', response.status);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Failed to analyze data');
+        }
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.log('[v0] API error response:', errorData);
-        throw new Error(errorData.error || 'Failed to analyze data');
+        const result = await response.json();
+        setMetrics(result.metrics);
+        setInsights(result.insights);
       }
-
-      const result = await response.json();
-      console.log('[v0] API success result:', JSON.stringify(result).slice(0, 500));
-      setMetrics(result.metrics);
-      setInsights(result.insights);
     } catch (err) {
-      console.error('[v0] analyzeData error:', err);
+      console.error('Analysis error:', err);
       setError(err.message);
       setMetrics(null);
       setInsights(null);
@@ -165,7 +178,9 @@ Running Shoes,Footwear,2024-01-15,899.50,28,45,1,0.28`}
                 </div>
               </div>
               <p className="text-foreground font-medium mb-2">Analyzing your data</p>
-              <p className="text-sm text-muted-foreground">Generating insights and recommendations...</p>
+              <p className="text-sm text-muted-foreground">
+                {rowCount > 0 ? `Processing ${rowCount.toLocaleString()} rows...` : 'Generating insights and recommendations...'}
+              </p>
             </div>
 
             {/* Skeleton Loading */}
