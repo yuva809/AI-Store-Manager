@@ -1,3 +1,4 @@
+deploy
 # v0-ai-agent
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [v0](https://v0.app).
